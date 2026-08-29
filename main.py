@@ -67,6 +67,11 @@ I18N = {
         "invalid_credentials": "Invalid email or password.", "email_exists": "Email already registered.",
         "password_mismatch": "Passwords do not match.", "password_short": "Password too short (min 4).",
         "invalid_email": "Invalid email address.", "auth": "Auth",
+        "enter_code": "Enter verification code", "code": "Code", "verify": "Verify", "back": "Back",
+        "invalid_code": "Invalid code", "attempts_left": "attempts left",
+        "too_many_attempts": "Too many attempts. Locked for", "locked": "Locked. Try again in",
+        "seconds": "seconds", "minutes": "minutes",
+        "verify_prompt": "A verification code has been sent to your email. Enter it below.", "demo_code": "Code",
     },
     "ru": {
         "app_title": "PrivacyHub", "new_rule": "➕ Новое правило", "delete": "🗑️ Удалить",
@@ -95,6 +100,11 @@ I18N = {
         "invalid_credentials": "Неверный email или пароль.", "email_exists": "Email уже зарегистрирован.",
         "password_mismatch": "Пароли не совпадают.", "password_short": "Пароль слишком короткий (мин 4).",
         "invalid_email": "Некорректный email.", "auth": "Вход",
+        "enter_code": "Введите код подтверждения", "code": "Код", "verify": "Подтвердить", "back": "Назад",
+        "invalid_code": "Неверный код", "attempts_left": "попыток осталось",
+        "too_many_attempts": "Слишком много попыток. Блокировка на", "locked": "Заблокировано. Попробуйте через",
+        "seconds": "секунд", "minutes": "минут",
+        "verify_prompt": "Код подтверждения отправлен на вашу почту. Введите его ниже.", "demo_code": "Код",
     },
     "kk": {
         "app_title": "PrivacyHub", "new_rule": "➕ Жаңа ереже", "delete": "🗑️ Жою",
@@ -123,6 +133,11 @@ I18N = {
         "invalid_credentials": "Қате email немесе құпия сөз.", "email_exists": "Email бұрын тіркелген.",
         "password_mismatch": "Құпия сөздер сәйкес келмейді.", "password_short": "Құпия сөз тым қысқа (мин 4).",
         "invalid_email": "Қате email.", "auth": "Кіру",
+        "enter_code": "Растау кодын енгізіңіз", "code": "Код", "verify": "Растау", "back": "Артқа",
+        "invalid_code": "Қате код", "attempts_left": "тырлық қалды",
+        "too_many_attempts": "Тым көп тырлық. Бұғаттау мерзімі", "locked": "Бұғатталды. Қайтадан қол жеткізу",
+        "seconds": "секундтан кейін", "minutes": "минуттан кейін",
+        "verify_prompt": "Растау коды электрондық поштаңызға жіберілді. Төменде енгізіңіз.", "demo_code": "Код",
     },
 }
 
@@ -191,6 +206,15 @@ def migrate_db(db):
         changed = True
     if "_current_user" not in db:
         db["_current_user"] = None
+        changed = True
+    if "_email_codes" not in db:
+        db["_email_codes"] = {}
+        changed = True
+    # Seed demo account
+    users = db.get("_users", [])
+    if not any(u.get("email", "").lower() == "testers@example.ru" for u in users):
+        users.append({"email": "testers@example.ru", "password_hash": base64.b64encode(b"testers").decode(), "name": "Tester"})
+        db["_users"] = users
         changed = True
     return changed
 
@@ -321,10 +345,57 @@ class PrivacyHubApp:
         else:
             self.auth_btn.config(text=self._t("login"), command=self._show_auth)
 
+    CODE_MAX_ATTEMPTS = 3
+    CODE_LOCK_MINUTES = 5
+    CODE_TTL_MS = 10 * 60 * 1000
+
+    def _get_email_codes(self):
+        return self.db.get("_email_codes", {})
+
+    def _save_email_codes(self, codes):
+        self.db["_email_codes"] = codes
+        save_database(self.db)
+
+    def _generate_email_code(self, email):
+        import random
+        code = str(random.randint(100000, 999999))
+        codes = self._get_email_codes()
+        codes[email.lower()] = {"code": code, "attempts": 0, "lockUntil": 0, "created": datetime.now().isoformat()}
+        self._save_email_codes(codes)
+        return code
+
+    def _is_email_locked(self, email):
+        codes = self._get_email_codes()
+        rec = codes.get(email.lower())
+        if not rec:
+            return False
+        lock = rec.get("lockUntil", 0)
+        if isinstance(lock, str):
+            try:
+                from datetime import datetime
+                lock = datetime.fromisoformat(lock).timestamp() * 1000
+            except Exception:
+                lock = 0
+        return lock > datetime.now().timestamp() * 1000
+
+    def _get_lock_remaining_sec(self, email):
+        codes = self._get_email_codes()
+        rec = codes.get(email.lower())
+        if not rec:
+            return 0
+        lock = rec.get("lockUntil", 0)
+        if isinstance(lock, str):
+            try:
+                lock = datetime.fromisoformat(lock).timestamp() * 1000
+            except Exception:
+                lock = 0
+        remaining = lock - datetime.now().timestamp() * 1000
+        return max(0, int(remaining / 1000))
+
     def _show_auth(self):
         win = Toplevel(self.root)
         win.title(self._t("auth"))
-        win.geometry("400x380")
+        win.geometry("420x420")
         win.transient(self.root)
         notebook = ttk.Notebook(win)
         notebook.pack(fill=BOTH, expand=True, padx=12, pady=12)
@@ -342,15 +413,73 @@ class PrivacyHubApp:
         def do_login():
             email = email_var.get().strip()
             pwd = pwd_var.get()
+            found = None
             for u in self.db.get("_users", []):
                 if u["email"] == email and u.get("password_hash") == base64.b64encode(pwd.encode()).decode():
-                    self.db["_current_user"] = email
-                    save_database(self.db)
-                    self._update_auth_ui()
-                    win.destroy()
-                    messagebox.showinfo(self._t("app_title"), self._t("logged_in"))
+                    found = u
+                    break
+            if not found:
+                messagebox.showerror(self._t("app_title"), self._t("invalid_credentials"))
+                return
+            if self._is_email_locked(email):
+                sec = self._get_lock_remaining_sec(email)
+                messagebox.showwarning(self._t("app_title"), f"{self._t('locked')} {sec} {self._t('seconds')}")
+                return
+            code = self._generate_email_code(email)
+            # Switch to verify panel
+            notebook.forget(login_frame)
+            notebook.forget(reg_frame)
+            verify_frame = ttk.Frame(notebook, padding=10)
+            notebook.add(verify_frame, text=self._t("enter_code"))
+            notebook.select(verify_frame)
+            ttk.Label(verify_frame, text=self._t("verify_prompt"), wraplength=350).pack(anchor=W, pady=(8, 2))
+            ttk.Label(verify_frame, text=f"{self._t('email')}: {email}", font=("Segoe UI", 10, "bold")).pack(anchor=W, pady=2)
+            ttk.Label(verify_frame, text=self._t("code")).pack(anchor=W, pady=(8, 2))
+            code_var = tk.StringVar()
+            ttk.Entry(verify_frame, textvariable=code_var).pack(fill=X, pady=2)
+            ttk.Label(verify_frame, text=f"{self._t('demo_code')}: {code}", foreground="#0d6efd", font=("Consolas", 10)).pack(anchor=W, pady=(4, 8))
+
+            def submit_code():
+                input_code = code_var.get().strip()
+                if self._is_email_locked(email):
+                    sec = self._get_lock_remaining_sec(email)
+                    messagebox.showwarning(self._t("app_title"), f"{self._t('locked')} {sec} {self._t('seconds')}")
                     return
-            messagebox.showerror(self._t("app_title"), self._t("invalid_credentials"))
+                codes = self._get_email_codes()
+                rec = codes.get(email.lower())
+                if not rec or rec.get("code") != input_code:
+                    if not rec:
+                        messagebox.showerror(self._t("app_title"), self._t("invalid_code"))
+                        return
+                    rec["attempts"] = rec.get("attempts", 0) + 1
+                    if rec["attempts"] >= self.CODE_MAX_ATTEMPTS:
+                        rec["lockUntil"] = (datetime.now().timestamp() * 1000) + self.CODE_LOCK_MINUTES * 60 * 1000
+                        self._save_email_codes(codes)
+                        messagebox.showwarning(self._t("app_title"), f"{self._t('too_many_attempts')} {self.CODE_LOCK_MINUTES} {self._t('minutes')}")
+                        win.destroy()
+                        return
+                    self._save_email_codes(codes)
+                    left = self.CODE_MAX_ATTEMPTS - rec["attempts"]
+                    messagebox.showerror(self._t("app_title"), f"{self._t('invalid_code')} ({left} {self._t('attempts_left')})")
+                    return
+                # correct
+                if email.lower() in codes:
+                    del codes[email.lower()]
+                    self._save_email_codes(codes)
+                self.db["_current_user"] = found["email"]
+                save_database(self.db)
+                self._update_auth_ui()
+                win.destroy()
+                messagebox.showinfo(self._t("app_title"), self._t("logged_in"))
+
+            def back_to_login():
+                notebook.forget(verify_frame)
+                notebook.add(login_frame, text=self._t("login"))
+                notebook.add(reg_frame, text=self._t("register"))
+                notebook.select(login_frame)
+
+            ttk.Button(verify_frame, text=self._t("verify"), bootstyle=PRIMARY, command=submit_code).pack(pady=10)
+            ttk.Button(verify_frame, text=self._t("back"), bootstyle=SECONDARY, command=back_to_login).pack(pady=2)
 
         ttk.Button(login_frame, text=self._t("login_btn"), bootstyle=PRIMARY, command=do_login).pack(pady=14)
 
@@ -384,12 +513,66 @@ class PrivacyHubApp:
             if any(u["email"] == email for u in users):
                 messagebox.showwarning(self._t("app_title"), self._t("email_exists"))
                 return
-            users.append({"email": email, "password_hash": base64.b64encode(pwd.encode()).decode(), "name": email.split("@")[0]})
-            self.db["_current_user"] = email
-            save_database(self.db)
-            self._update_auth_ui()
-            win.destroy()
-            messagebox.showinfo(self._t("app_title"), "Registered successfully!")
+            if self._is_email_locked(email):
+                sec = self._get_lock_remaining_sec(email)
+                messagebox.showwarning(self._t("app_title"), f"{self._t('locked')} {sec} {self._t('seconds')}")
+                return
+            code = self._generate_email_code(email)
+            # Switch to verify panel
+            notebook.forget(login_frame)
+            notebook.forget(reg_frame)
+            verify_frame = ttk.Frame(notebook, padding=10)
+            notebook.add(verify_frame, text=self._t("enter_code"))
+            notebook.select(verify_frame)
+            ttk.Label(verify_frame, text=self._t("verify_prompt"), wraplength=350).pack(anchor=W, pady=(8, 2))
+            ttk.Label(verify_frame, text=f"{self._t('email')}: {email}", font=("Segoe UI", 10, "bold")).pack(anchor=W, pady=2)
+            ttk.Label(verify_frame, text=self._t("code")).pack(anchor=W, pady=(8, 2))
+            code_var = tk.StringVar()
+            ttk.Entry(verify_frame, textvariable=code_var).pack(fill=X, pady=2)
+            ttk.Label(verify_frame, text=f"{self._t('demo_code')}: {code}", foreground="#0d6efd", font=("Consolas", 10)).pack(anchor=W, pady=(4, 8))
+
+            def submit_code_reg():
+                input_code = code_var.get().strip()
+                if self._is_email_locked(email):
+                    sec = self._get_lock_remaining_sec(email)
+                    messagebox.showwarning(self._t("app_title"), f"{self._t('locked')} {sec} {self._t('seconds')}")
+                    return
+                codes = self._get_email_codes()
+                rec = codes.get(email.lower())
+                if not rec or rec.get("code") != input_code:
+                    if not rec:
+                        messagebox.showerror(self._t("app_title"), self._t("invalid_code"))
+                        return
+                    rec["attempts"] = rec.get("attempts", 0) + 1
+                    if rec["attempts"] >= self.CODE_MAX_ATTEMPTS:
+                        rec["lockUntil"] = (datetime.now().timestamp() * 1000) + self.CODE_LOCK_MINUTES * 60 * 1000
+                        self._save_email_codes(codes)
+                        messagebox.showwarning(self._t("app_title"), f"{self._t('too_many_attempts')} {self.CODE_LOCK_MINUTES} {self._t('minutes')}")
+                        win.destroy()
+                        return
+                    self._save_email_codes(codes)
+                    left = self.CODE_MAX_ATTEMPTS - rec["attempts"]
+                    messagebox.showerror(self._t("app_title"), f"{self._t('invalid_code')} ({left} {self._t('attempts_left')})")
+                    return
+                # correct
+                if email.lower() in codes:
+                    del codes[email.lower()]
+                    self._save_email_codes(codes)
+                users.append({"email": email, "password_hash": base64.b64encode(pwd.encode()).decode(), "name": email.split("@")[0]})
+                self.db["_current_user"] = email
+                save_database(self.db)
+                self._update_auth_ui()
+                win.destroy()
+                messagebox.showinfo(self._t("app_title"), "Registered successfully!")
+
+            def back_to_reg():
+                notebook.forget(verify_frame)
+                notebook.add(login_frame, text=self._t("login"))
+                notebook.add(reg_frame, text=self._t("register"))
+                notebook.select(reg_frame)
+
+            ttk.Button(verify_frame, text=self._t("verify"), bootstyle=PRIMARY, command=submit_code_reg).pack(pady=10)
+            ttk.Button(verify_frame, text=self._t("back"), bootstyle=SECONDARY, command=back_to_reg).pack(pady=2)
 
         ttk.Button(reg_frame, text=self._t("register_btn"), bootstyle=PRIMARY, command=do_register).pack(pady=14)
 
@@ -692,7 +875,7 @@ class PrivacyHubApp:
         if not messagebox.askyesno(self._t("publish"), self._t("confirm_publish")):
             return
         rule = self.db["rules"][self.current_rule_id]
-        share_obj = {"id": self.current_rule_id, "title": rule.get("title", ""), "version": rule.get("version", "1.0"), "status": rule.get("status", self._t("draft")), "content": rule.get("content", ""), "lang": self.lang, "author": self.db.get("_current_user") or "You", "date": datetime.now().isoformat()[:10]}
+        share_obj = {"id": self.current_rule_id, "title": rule.get("title", ""), "version": rule.get("version", "1.0"), "status": rule.get("status", self._t("draft")), "content": rule.get("content", ""), "lang": self.lang, "author": self.db.get("_current_user") or "Guest", "date": datetime.now().isoformat()[:10]}
         json_str = json.dumps(share_obj, ensure_ascii=False)
         b64 = base64.b64encode(json_str.encode('utf-8')).decode('ascii')
         self.root.clipboard_clear()
