@@ -9,7 +9,7 @@ PrivacyHub — Desktop приложение для создания и упра�
 - Публичные правила (встроенные шаблоны PrivacyHub)
 - Настройки темы (Dark/Light) и языка (EN/RU/KK)
 - Автоперевод через MyMemory API
-- Вход по email/password и Google (открывает браузер)
+- Вход по email/password
 """
 
 import json
@@ -20,7 +20,6 @@ import urllib.request
 import urllib.parse
 import threading
 import tkinter as tk
-import webbrowser
 from datetime import datetime
 from tkinter import messagebox, filedialog, simpledialog, Toplevel
 
@@ -63,7 +62,7 @@ I18N = {
         "saved": "Saved", "deleted": "Deleted", "published_rules": "Published rules from PrivacyHub",
         "login": "🚪 Login", "logout": "🚪 Logout", "register": "📝 Register",
         "email": "Email", "password": "Password", "confirm_password": "Confirm Password",
-        "login_btn": "Login", "register_btn": "Register", "login_google": "🔑 Login with Google",
+        "login_btn": "Login", "register_btn": "Register",
         "logged_in": "Logged in successfully!", "logged_out": "Logged out.",
         "invalid_credentials": "Invalid email or password.", "email_exists": "Email already registered.",
         "password_mismatch": "Passwords do not match.", "password_short": "Password too short (min 4).",
@@ -91,7 +90,7 @@ I18N = {
         "saved": "Сохранено", "deleted": "Удалено", "published_rules": "Опубликованные правила PrivacyHub",
         "login": "🚪 Вход", "logout": "🚪 Выйти", "register": "📝 Регистрация",
         "email": "Email", "password": "Пароль", "confirm_password": "Подтвердите пароль",
-        "login_btn": "Войти", "register_btn": "Зарегистрироваться", "login_google": "🔑 Войти через Google",
+        "login_btn": "Войти", "register_btn": "Зарегистрироваться",
         "logged_in": "Вход выполнен!", "logged_out": "Вы вышли.",
         "invalid_credentials": "Неверный email или пароль.", "email_exists": "Email уже зарегистрирован.",
         "password_mismatch": "Пароли не совпадают.", "password_short": "Пароль слишком короткий (мин 4).",
@@ -119,7 +118,7 @@ I18N = {
         "saved": "Сақталды", "deleted": "Жойылды", "published_rules": "PrivacyHub жарияланған ережелері",
         "login": "🚪 Кіру", "logout": "🚪 Шығу", "register": "📝 Тіркелу",
         "email": "Email", "password": "Құпия сөз", "confirm_password": "Құпия сөзді растаңыз",
-        "login_btn": "Кіру", "register_btn": "Тіркелу", "login_google": "🔑 Google арқылы кіру",
+        "login_btn": "Кіру", "register_btn": "Тіркелу",
         "logged_in": "Кіру сәтті!", "logged_out": "Сіз шықтыңыз.",
         "invalid_credentials": "Қате email немесе құпия сөз.", "email_exists": "Email бұрын тіркелген.",
         "password_mismatch": "Құпия сөздер сәйкес келмейді.", "password_short": "Құпия сөз тым қысқа (мин 4).",
@@ -354,7 +353,6 @@ class PrivacyHubApp:
             messagebox.showerror(self._t("app_title"), self._t("invalid_credentials"))
 
         ttk.Button(login_frame, text=self._t("login_btn"), bootstyle=PRIMARY, command=do_login).pack(pady=14)
-        ttk.Button(login_frame, text=self._t("login_google"), bootstyle=INFO, command=lambda: webbrowser.open("https://accounts.google.com/signin")).pack()
 
         # Register tab
         reg_frame = ttk.Frame(notebook, padding=10)
