@@ -50,10 +50,16 @@ I18N = {
         "templates": "⚡ Templates:", "draft": "Draft", "under_review": "Under Review",
         "approved": "Approved", "archived": "Archived", "publish": "🌐 Publish",
         "public_rules": "📢 Public Rules", "settings": "⚙️ Settings",
+        "community_rules": "🌍 Community", "authors_rules": "✍️ Authors",
+        "community_rules_title": "🌍 Community Rules", "authors_rules_title": "✍️ Authors' Rules",
         "theme_dark": "Dark Theme", "theme_light": "Light Theme", "language": "Language",
         "copy_link": "Copy Link", "share_msg": "Shareable code copied to clipboard:",
         "confirm_publish": "Publish this rule? A shareable code will be generated.",
         "published": "Published", "public_rules_title": "📢 Public Rules",
+        "publish_to": "Publish to:", "publish_community": "Community", "publish_authors": "Authors",
+        "banned_message": "You are banned from publishing rules.", "admin_panel": "🛡️ Admin",
+        "admin_title": "🛡️ Admin Panel", "admin_users": "Registered Users", "ban": "Ban", "unban": "Unban",
+        "user_banned": "Banned", "user_active": "Active",
         "save_to_my": "Save to My Rules", "select_rule_warn": "Please select or create a rule first.",
         "translate_wait": "Translating...", "translate_done": "Translation complete.",
         "ok": "OK", "cancel": "Cancel", "rules_list": "📁 Rules",
@@ -83,10 +89,16 @@ I18N = {
         "templates": "⚡ Шаблоны:", "draft": "Черновик", "under_review": "На рассмотрении",
         "approved": "Утверждено", "archived": "Архив", "publish": "🌐 Опубликовать",
         "public_rules": "📢 Другие правила", "settings": "⚙️ Настройки",
+        "community_rules": "🌍 Сообщество", "authors_rules": "✍️ Авторы",
+        "community_rules_title": "🌍 Правила от сообщества", "authors_rules_title": "✍️ Правила от авторов",
         "theme_dark": "Тёмная тема", "theme_light": "Светлая тема", "language": "Язык",
         "copy_link": "Копировать ссылку", "share_msg": "Код для публикации скопирован в буфер:",
         "confirm_publish": "Опубликовать правило? Будет создан share-код.",
         "published": "Опубликовано", "public_rules_title": "📢 Публичные правила",
+        "publish_to": "Опубликовать в:", "publish_community": "Сообщество", "publish_authors": "Авторы",
+        "banned_message": "Вам запрещено публиковать правила.", "admin_panel": "🛡️ Админ",
+        "admin_title": "🛡️ Панель администратора", "admin_users": "Зарегистрированные пользователи", "ban": "Забанить", "unban": "Разбанить",
+        "user_banned": "Забанен", "user_active": "Активен",
         "save_to_my": "Сохранить в Мои правила", "select_rule_warn": "Сначала выберите или создайте правило.",
         "translate_wait": "Перевод...", "translate_done": "Перевод завершён.",
         "ok": "OK", "cancel": "Отмена", "rules_list": "📁 Репозитории правил",
@@ -116,10 +128,16 @@ I18N = {
         "templates": "⚡ Үлгілер:", "draft": "Жоба", "under_review": "Қаралуда",
         "approved": "Бекітілді", "archived": "Мұрағат", "publish": "🌐 Жариялау",
         "public_rules": "📢 Басқа ережелер", "settings": "⚙️ Параметрлер",
+        "community_rules": "🌍 Қоғамдық", "authors_rules": "✍️ Авторлар",
+        "community_rules_title": "🌍 Қоғамдық ережелер", "authors_rules_title": "✍️ Авторлар ережелері",
         "theme_dark": "Қараңғы тема", "theme_light": "Жарық тема", "language": "Тіл",
         "copy_link": "Сілтемені көшіру", "share_msg": "Жариялау коды алмасу буферіне көшірілді:",
         "confirm_publish": "Ережені жариялау? Ортақ код жасалады.",
         "published": "Жарияланды", "public_rules_title": "📢 Ашық ережелер",
+        "publish_to": "Жариялау:", "publish_community": "Қоғамдық", "publish_authors": "Авторлар",
+        "banned_message": "Сізге ережелерді жариялауға тыйым салынған.", "admin_panel": "🛡️ Админ",
+        "admin_title": "🛡️ Әкімші панелі", "admin_users": "Тіркелген пайдаланушылар", "ban": "Бұғаттау", "unban": "Бұғатты ашу",
+        "user_banned": "Бұғатталған", "user_active": "Белсенді",
         "save_to_my": "Менің ережелеріме сақтау", "select_rule_warn": "Алдымен ережені таңдаңыз немесе жасаңыз.",
         "translate_wait": "Аудару...", "translate_done": "Аударма аяқталды.",
         "ok": "OK", "cancel": "Бас тарту", "rules_list": "📁 Ережелер репозиторийі",
@@ -210,10 +228,20 @@ def migrate_db(db):
     if "_email_codes" not in db:
         db["_email_codes"] = {}
         changed = True
-    # Seed demo account
+    if "_public_community" not in db:
+        db["_public_community"] = []
+        changed = True
+    if "_public_authors" not in db:
+        db["_public_authors"] = []
+        changed = True
+    # Seed demo account and migrate banned flag
     users = db.get("_users", [])
+    for u in users:
+        if "banned" not in u:
+            u["banned"] = False
+            changed = True
     if not any(u.get("email", "").lower() == "testers@example.ru" for u in users):
-        users.append({"email": "testers@example.ru", "password_hash": base64.b64encode(b"testers").decode(), "name": "Tester"})
+        users.append({"email": "testers@example.ru", "password_hash": base64.b64encode(b"testers").decode(), "name": "Tester", "banned": False})
         db["_users"] = users
         changed = True
     return changed
@@ -259,7 +287,9 @@ class PrivacyHubApp:
         ttk.Button(toolbar, text=self._t("preview"), bootstyle=WARNING, command=self._show_preview).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("print_pdf"), bootstyle=INFO, command=self._export_pdf).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("publish"), bootstyle=PRIMARY, command=self._do_publish).pack(side=LEFT, padx=5)
-        ttk.Button(toolbar, text=self._t("public_rules"), bootstyle=INFO, command=self._show_public_rules).pack(side=LEFT, padx=5)
+        ttk.Button(toolbar, text=self._t("community_rules"), bootstyle=INFO, command=self._show_community_rules).pack(side=LEFT, padx=5)
+        ttk.Button(toolbar, text=self._t("authors_rules"), bootstyle=INFO, command=self._show_authors_rules).pack(side=LEFT, padx=5)
+        self.admin_btn = ttk.Button(toolbar, text=self._t("admin_panel"), bootstyle=DANGER, command=self._show_admin_panel)
         ttk.Button(toolbar, text=self._t("downloads"), bootstyle=SECONDARY, command=self._show_downloads).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("settings"), bootstyle=SECONDARY, command=self._show_settings).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("open_exports"), bootstyle=SECONDARY, command=self._open_exports_folder).pack(side=LEFT, padx=5)
@@ -342,8 +372,13 @@ class PrivacyHubApp:
         user = self.db.get("_current_user")
         if user:
             self.auth_btn.config(text=f"👤 {user} | {self._t('logout')}", command=self._do_logout)
+            if user.lower() == "testers@example.ru":
+                self.admin_btn.pack(side=LEFT, padx=5)
+            else:
+                self.admin_btn.pack_forget()
         else:
             self.auth_btn.config(text=self._t("login"), command=self._show_auth)
+            self.admin_btn.pack_forget()
 
     CODE_MAX_ATTEMPTS = 3
     CODE_LOCK_MINUTES = 5
@@ -575,6 +610,14 @@ class PrivacyHubApp:
             ttk.Button(verify_frame, text=self._t("back"), bootstyle=SECONDARY, command=back_to_reg).pack(pady=2)
 
         ttk.Button(reg_frame, text=self._t("register_btn"), bootstyle=PRIMARY, command=do_register).pack(pady=14)
+
+    def _is_banned(self, email):
+        if not email:
+            return False
+        for u in self.db.get("_users", []):
+            if u.get("email", "").lower() == email.lower():
+                return u.get("banned", False)
+        return False
 
     def _do_logout(self):
         self.db["_current_user"] = None
@@ -872,12 +915,42 @@ class PrivacyHubApp:
         if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
+        user = self.db.get("_current_user")
+        if self._is_banned(user):
+            messagebox.showwarning(self._t("app_title"), self._t("banned_message"))
+            return
         if not messagebox.askyesno(self._t("publish"), self._t("confirm_publish")):
             return
+        # Ask target feed
+        target = "community"
+        if user:
+            win_ask = Toplevel(self.root)
+            win_ask.title(self._t("publish"))
+            win_ask.geometry("350x150")
+            win_ask.transient(self.root)
+            ttk.Label(win_ask, text=self._t("publish_to"), font=("Segoe UI", 11)).pack(pady=10)
+            target_var = tk.StringVar(value="community")
+            ttk.Combobox(win_ask, values=[self._t("publish_community"), self._t("publish_authors")], textvariable=target_var, state="readonly", width=20).pack(pady=5)
+            def confirm_target():
+                nonlocal target
+                val = target_var.get()
+                target = "authors" if self._t("publish_authors") in val else "community"
+                win_ask.destroy()
+            ttk.Button(win_ask, text="OK", command=confirm_target).pack(pady=10)
+            self.root.wait_window(win_ask)
         rule = self.db["rules"][self.current_rule_id]
-        share_obj = {"id": self.current_rule_id, "title": rule.get("title", ""), "version": rule.get("version", "1.0"), "status": rule.get("status", self._t("draft")), "content": rule.get("content", ""), "lang": self.lang, "author": self.db.get("_current_user") or "Guest", "date": datetime.now().isoformat()[:10]}
+        share_obj = {"id": self.current_rule_id, "title": rule.get("title", ""), "version": rule.get("version", "1.0"), "status": rule.get("status", self._t("draft")), "content": rule.get("content", ""), "lang": self.lang, "author": user or "Guest", "date": datetime.now().isoformat()[:10], "feed": target}
         json_str = json.dumps(share_obj, ensure_ascii=False)
         b64 = base64.b64encode(json_str.encode('utf-8')).decode('ascii')
+        # Save to appropriate public list
+        key = "_public_authors" if target == "authors" else "_public_community"
+        pub_list = self.db.setdefault(key, [])
+        existing = next((i for i, r in enumerate(pub_list) if r.get("id") == self.current_rule_id), -1)
+        if existing >= 0:
+            pub_list[existing] = share_obj
+        else:
+            pub_list.insert(0, share_obj)
+        save_database(self.db)
         self.root.clipboard_clear()
         self.root.clipboard_append(b64)
         win = Toplevel(self.root)
@@ -891,11 +964,12 @@ class PrivacyHubApp:
         entry.focus()
         ttk.Button(win, text=self._t("copy_link"), command=lambda: [self.root.clipboard_clear(), self.root.clipboard_append(b64)]).pack(pady=10)
 
-    def _show_public_rules(self):
+    def _show_public_browser(self, feed):
+        title_key = "community_rules_title" if feed == "community" else "authors_rules_title"
         win = Toplevel(self.root)
-        win.title(self._t("public_rules_title"))
+        win.title(self._t(title_key))
         win.geometry("900x600")
-        ttk.Label(win, text=self._t("public_rules_title"), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=10)
+        ttk.Label(win, text=self._t(title_key), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=10)
         tv_frame = ttk.Frame(win, padding=10)
         tv_frame.pack(fill=BOTH, expand=True)
         cols = ("title", "lang", "author", "date")
@@ -912,40 +986,54 @@ class PrivacyHubApp:
         tree.configure(yscrollcommand=vsb.set)
         tree.pack(side=LEFT, fill=BOTH, expand=True)
         vsb.pack(side=RIGHT, fill=Y)
-        for pr in PUBLIC_RULES:
-            tree.insert("", tk.END, values=(pr["title"], pr["lang"], pr["author"], pr["date"]), tags=(pr["id"],))
+        items = []
+        if feed == "community":
+            items = PUBLIC_RULES + self.db.get("_public_community", [])
+        else:
+            items = self.db.get("_public_authors", [])
+        for pr in items:
+            tree.insert("", tk.END, values=(pr.get("title", ""), pr.get("lang", ""), pr.get("author", ""), pr.get("date", "")), tags=(json.dumps(pr),))
         def on_double_click(event):
             sel = tree.selection()
             if not sel:
                 return
-            pid = tree.item(sel[0], "tags")[0]
-            self._show_public_detail(win, pid)
+            raw = tree.item(sel[0], "tags")[0]
+            try:
+                pr = json.loads(raw)
+            except Exception:
+                return
+            self._show_public_detail(win, pr)
         tree.bind("<Double-1>", on_double_click)
         btn_frame = ttk.Frame(win, padding=10)
         btn_frame.pack(fill=X)
         ttk.Button(btn_frame, text=self._t("save_to_my"), bootstyle=PRIMARY, command=lambda: on_double_click(None)).pack(side=LEFT, padx=5)
         ttk.Button(btn_frame, text="❌ Close", bootstyle=SECONDARY, command=win.destroy).pack(side=RIGHT, padx=5)
 
-    def _show_public_detail(self, parent_win, pid):
-        pr = next((r for r in PUBLIC_RULES if r["id"] == pid), None)
-        if not pr:
+    def _show_community_rules(self):
+        self._show_public_browser("community")
+
+    def _show_authors_rules(self):
+        self._show_public_browser("authors")
+
+    def _show_public_detail(self, parent_win, pr):
+        if not pr or not isinstance(pr, dict):
             return
         detail = Toplevel(parent_win)
-        detail.title(pr["title"])
+        detail.title(pr.get("title", "Public Rule"))
         detail.geometry("800x600")
-        ttk.Label(detail, text=pr["title"], font=("Segoe UI", 16, "bold")).pack(anchor=W, padx=15, pady=10)
-        ttk.Label(detail, text=f"Version: {pr['version']} | Status: {pr['status']} | Lang: {pr['lang']}", font=("Segoe UI", 11)).pack(anchor=W, padx=15)
-        ttk.Label(detail, text=f"Author: {pr['author']} | Date: {pr['date']}", font=("Segoe UI", 10)).pack(anchor=W, padx=15, pady=5)
+        ttk.Label(detail, text=pr.get("title", ""), font=("Segoe UI", 16, "bold")).pack(anchor=W, padx=15, pady=10)
+        ttk.Label(detail, text=f"Version: {pr.get('version', '1.0')} | Status: {pr.get('status', 'Draft')} | Lang: {pr.get('lang', 'en')}", font=("Segoe UI", 11)).pack(anchor=W, padx=15)
+        ttk.Label(detail, text=f"Author: {pr.get('author', '')} | Date: {pr.get('date', '')}", font=("Segoe UI", 10)).pack(anchor=W, padx=15, pady=5)
         ttk.Separator(detail, orient=HORIZONTAL).pack(fill=X, padx=15, pady=5)
         bg = "#1e1e1e" if self.theme == "dark" else "#ffffff"
         fg = "#e0e0e0" if self.theme == "dark" else "#212529"
         text_widget = tk.Text(detail, wrap=tk.WORD, font=("Consolas", 12), bg=bg, fg=fg, padx=10, pady=10)
         text_widget.pack(fill=BOTH, expand=True, padx=15, pady=5)
-        text_widget.insert(tk.END, pr["content"])
+        text_widget.insert(tk.END, pr.get("content", ""))
         text_widget.config(state=tk.DISABLED)
         def save_public():
             rid = f"rule_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            self.db.setdefault("rules", {})[rid] = {"title": pr["title"], "version": pr["version"], "status": pr["status"], "content": pr["content"], "images": [], "created": datetime.now().isoformat(), "updated": datetime.now().isoformat()}
+            self.db.setdefault("rules", {})[rid] = {"title": pr.get("title", "Imported Rule"), "version": pr.get("version", "1.0"), "status": pr.get("status", "Draft"), "content": pr.get("content", ""), "images": [], "created": datetime.now().isoformat(), "updated": datetime.now().isoformat()}
             save_database(self.db)
             self._refresh_list()
             messagebox.showinfo(self._t("app_title"), "Saved to My Rules!")
@@ -987,6 +1075,52 @@ class PrivacyHubApp:
                     self._apply_theme_on_the_fly()
                 messagebox.showinfo(self._t("app_title"), self._t("restart_needed"))
         ttk.Button(win, text=self._t("apply"), command=apply_settings).pack(pady=15)
+
+    def _show_admin_panel(self):
+        win = Toplevel(self.root)
+        win.title(self._t("admin_title"))
+        win.geometry("700x500")
+        ttk.Label(win, text=self._t("admin_title"), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=10)
+        ttk.Label(win, text=self._t("admin_users"), font=("Segoe UI", 11)).pack(anchor=W, padx=15, pady=5)
+        tv_frame = ttk.Frame(win, padding=10)
+        tv_frame.pack(fill=BOTH, expand=True)
+        cols = ("email", "name", "status")
+        tree = ttk.Treeview(tv_frame, columns=cols, show="headings", bootstyle="dark")
+        tree.heading("email", text="Email")
+        tree.heading("name", text="Name")
+        tree.heading("status", text="Status")
+        tree.column("email", width=300)
+        tree.column("name", width=150)
+        tree.column("status", width=100, anchor="center")
+        vsb = ttk.Scrollbar(tv_frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        tree.pack(side=LEFT, fill=BOTH, expand=True)
+        vsb.pack(side=RIGHT, fill=Y)
+        def refresh_users():
+            for item in tree.get_children():
+                tree.delete(item)
+            for u in self.db.get("_users", []):
+                banned = u.get("banned", False)
+                status = self._t("user_banned") if banned else self._t("user_active")
+                tree.insert("", tk.END, values=(u.get("email", ""), u.get("name", ""), status), tags=(u.get("email", ""),))
+        refresh_users()
+        def on_double_click(event):
+            sel = tree.selection()
+            if not sel:
+                return
+            email = tree.item(sel[0], "tags")[0]
+            users = self.db.get("_users", [])
+            for u in users:
+                if u.get("email") == email:
+                    u["banned"] = not u.get("banned", False)
+                    break
+            save_database(self.db)
+            refresh_users()
+        tree.bind("<Double-1>", on_double_click)
+        btn_frame = ttk.Frame(win, padding=10)
+        btn_frame.pack(fill=X)
+        ttk.Label(btn_frame, text="Double-click a user to toggle ban/unban.", font=("Segoe UI", 9), foreground="#888").pack(side=LEFT, padx=5)
+        ttk.Button(btn_frame, text="❌ Close", bootstyle=SECONDARY, command=win.destroy).pack(side=RIGHT, padx=5)
 
     def _apply_theme_on_the_fly(self):
         ttk_theme = THEMES.get(self.theme, "darkly")
