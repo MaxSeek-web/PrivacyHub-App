@@ -9,6 +9,7 @@ PrivacyHub — Desktop приложение для создания и упра�
 - Публичные правила (встроенные шаблоны PrivacyHub)
 - Настройки темы (Dark/Light) и языка (EN/RU/KK)
 - Автоперевод через MyMemory API
+- Вход по email/password и Google (открывает браузер)
 """
 
 import json
@@ -19,6 +20,7 @@ import urllib.request
 import urllib.parse
 import threading
 import tkinter as tk
+import webbrowser
 from datetime import datetime
 from tkinter import messagebox, filedialog, simpledialog, Toplevel
 
@@ -29,7 +31,7 @@ from PIL import Image, ImageTk
 from fpdf import FPDF
 
 APP_NAME = "PrivacyHub"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 DATA_DIR = os.path.join(os.path.expanduser("~"), ".privacyhub")
 DB_FILE = os.path.join(DATA_DIR, "privacy_rules.json")
 EXPORTS_DIR = os.path.join(DATA_DIR, "exports")
@@ -40,189 +42,111 @@ LANGS = {"en": "English", "ru": "Русский", "kk": "Қазақша"}
 
 I18N = {
     "en": {
-        "app_title": "PrivacyHub",
-        "new_rule": "➕ New Rule",
-        "delete": "🗑️ Delete",
-        "save": "💾 Save",
-        "preview": "👁️ Preview",
-        "print_pdf": "📄 Print PDF",
-        "downloads": "📥 Downloads",
-        "open_exports": "📂 Open Export Folder",
-        "search": "Search",
-        "rule_name": "Rule Name:",
-        "version": "Version:",
-        "status": "Status:",
-        "content": "📝 Rule Content",
-        "images": "🖼️ Attached Images:",
-        "add_image": "➕ Add Screenshot",
-        "remove_image": "❌ Remove Selected",
-        "templates": "⚡ Templates:",
-        "draft": "Draft",
-        "under_review": "Under Review",
-        "approved": "Approved",
-        "archived": "Archived",
-        "publish": "🌐 Publish",
-        "public_rules": "📢 Public Rules",
-        "settings": "⚙️ Settings",
-        "theme_dark": "Dark Theme",
-        "theme_light": "Light Theme",
-        "language": "Language",
-        "copy_link": "Copy Link",
-        "share_msg": "Shareable code copied to clipboard:",
+        "app_title": "PrivacyHub", "new_rule": "➕ New Rule", "delete": "🗑️ Delete",
+        "save": "💾 Save", "preview": "👁️ Preview", "print_pdf": "📄 Print PDF",
+        "downloads": "📥 Downloads", "open_exports": "📂 Open Export Folder",
+        "search": "Search", "rule_name": "Rule Name:", "version": "Version:",
+        "status": "Status:", "content": "📝 Rule Content", "images": "🖼️ Attached Images:",
+        "add_image": "➕ Add Screenshot", "remove_image": "❌ Remove Selected",
+        "templates": "⚡ Templates:", "draft": "Draft", "under_review": "Under Review",
+        "approved": "Approved", "archived": "Archived", "publish": "🌐 Publish",
+        "public_rules": "📢 Public Rules", "settings": "⚙️ Settings",
+        "theme_dark": "Dark Theme", "theme_light": "Light Theme", "language": "Language",
+        "copy_link": "Copy Link", "share_msg": "Shareable code copied to clipboard:",
         "confirm_publish": "Publish this rule? A shareable code will be generated.",
-        "published": "Published",
-        "public_rules_title": "📢 Public Rules",
-        "save_to_my": "Save to My Rules",
-        "select_rule_warn": "Please select or create a rule first.",
-        "translate_wait": "Translating...",
-        "translate_done": "Translation complete.",
-        "ok": "OK",
-        "cancel": "Cancel",
-        "rules_list": "📁 Rules",
-        "choose_theme": "Theme",
-        "choose_lang": "Language",
-        "apply": "Apply",
-        "restart_needed": "Settings applied. The theme updated.",
-        "status_ready": "Ready",
-        "saved": "Saved",
-        "deleted": "Deleted",
-        "published_rules": "Published rules from PrivacyHub",
+        "published": "Published", "public_rules_title": "📢 Public Rules",
+        "save_to_my": "Save to My Rules", "select_rule_warn": "Please select or create a rule first.",
+        "translate_wait": "Translating...", "translate_done": "Translation complete.",
+        "ok": "OK", "cancel": "Cancel", "rules_list": "📁 Rules",
+        "choose_theme": "Theme", "choose_lang": "Language", "apply": "Apply",
+        "restart_needed": "Settings applied. The theme updated.", "status_ready": "Ready",
+        "saved": "Saved", "deleted": "Deleted", "published_rules": "Published rules from PrivacyHub",
+        "login": "🚪 Login", "logout": "🚪 Logout", "register": "📝 Register",
+        "email": "Email", "password": "Password", "confirm_password": "Confirm Password",
+        "login_btn": "Login", "register_btn": "Register", "login_google": "🔑 Login with Google",
+        "logged_in": "Logged in successfully!", "logged_out": "Logged out.",
+        "invalid_credentials": "Invalid email or password.", "email_exists": "Email already registered.",
+        "password_mismatch": "Passwords do not match.", "password_short": "Password too short (min 4).",
+        "invalid_email": "Invalid email address.", "auth": "Auth",
     },
     "ru": {
-        "app_title": "PrivacyHub",
-        "new_rule": "➕ Новое правило",
-        "delete": "🗑️ Удалить",
-        "save": "💾 Сохранить",
-        "preview": "👁️ Предпросмотр",
-        "print_pdf": "📄 Печать в PDF",
-        "downloads": "📥 Загрузки",
-        "open_exports": "📂 Открыть папку экспорта",
-        "search": "Поиск",
-        "rule_name": "Название правила:",
-        "version": "Версия:",
-        "status": "Статус:",
-        "content": "📝 Содержание правила",
-        "images": "🖼️ Прикреплённые изображения:",
-        "add_image": "➕ Добавить скриншот",
-        "remove_image": "❌ Удалить выбранное",
-        "templates": "⚡ Шаблоны:",
-        "draft": "Черновик",
-        "under_review": "На рассмотрении",
-        "approved": "Утверждено",
-        "archived": "Архив",
-        "publish": "🌐 Опубликовать",
-        "public_rules": "📢 Другие правила",
-        "settings": "⚙️ Настройки",
-        "theme_dark": "Тёмная тема",
-        "theme_light": "Светлая тема",
-        "language": "Язык",
-        "copy_link": "Копировать ссылку",
-        "share_msg": "Код для публикации скопирован в буфер:",
+        "app_title": "PrivacyHub", "new_rule": "➕ Новое правило", "delete": "🗑️ Удалить",
+        "save": "💾 Сохранить", "preview": "👁️ Предпросмотр", "print_pdf": "📄 Печать в PDF",
+        "downloads": "📥 Загрузки", "open_exports": "📂 Открыть папку экспорта",
+        "search": "Поиск", "rule_name": "Название правила:", "version": "Версия:",
+        "status": "Статус:", "content": "📝 Содержание правила", "images": "🖼️ Прикреплённые изображения:",
+        "add_image": "➕ Добавить скриншот", "remove_image": "❌ Удалить выбранное",
+        "templates": "⚡ Шаблоны:", "draft": "Черновик", "under_review": "На рассмотрении",
+        "approved": "Утверждено", "archived": "Архив", "publish": "🌐 Опубликовать",
+        "public_rules": "📢 Другие правила", "settings": "⚙️ Настройки",
+        "theme_dark": "Тёмная тема", "theme_light": "Светлая тема", "language": "Язык",
+        "copy_link": "Копировать ссылку", "share_msg": "Код для публикации скопирован в буфер:",
         "confirm_publish": "Опубликовать правило? Будет создан share-код.",
-        "published": "Опубликовано",
-        "public_rules_title": "📢 Публичные правила",
-        "save_to_my": "Сохранить в Мои правила",
-        "select_rule_warn": "Сначала выберите или создайте правило.",
-        "translate_wait": "Перевод...",
-        "translate_done": "Перевод завершён.",
-        "ok": "OK",
-        "cancel": "Отмена",
-        "rules_list": "📁 Репозитории правил",
-        "choose_theme": "Тема",
-        "choose_lang": "Язык",
-        "apply": "Применить",
-        "restart_needed": "Настройки применены. Тема обновлена.",
-        "status_ready": "Готово",
-        "saved": "Сохранено",
-        "deleted": "Удалено",
-        "published_rules": "Опубликованные правила PrivacyHub",
+        "published": "Опубликовано", "public_rules_title": "📢 Публичные правила",
+        "save_to_my": "Сохранить в Мои правила", "select_rule_warn": "Сначала выберите или создайте правило.",
+        "translate_wait": "Перевод...", "translate_done": "Перевод завершён.",
+        "ok": "OK", "cancel": "Отмена", "rules_list": "📁 Репозитории правил",
+        "choose_theme": "Тема", "choose_lang": "Язык", "apply": "Применить",
+        "restart_needed": "Настройки применены. Тема обновлена.", "status_ready": "Готово",
+        "saved": "Сохранено", "deleted": "Удалено", "published_rules": "Опубликованные правила PrivacyHub",
+        "login": "🚪 Вход", "logout": "🚪 Выйти", "register": "📝 Регистрация",
+        "email": "Email", "password": "Пароль", "confirm_password": "Подтвердите пароль",
+        "login_btn": "Войти", "register_btn": "Зарегистрироваться", "login_google": "🔑 Войти через Google",
+        "logged_in": "Вход выполнен!", "logged_out": "Вы вышли.",
+        "invalid_credentials": "Неверный email или пароль.", "email_exists": "Email уже зарегистрирован.",
+        "password_mismatch": "Пароли не совпадают.", "password_short": "Пароль слишком короткий (мин 4).",
+        "invalid_email": "Некорректный email.", "auth": "Вход",
     },
     "kk": {
-        "app_title": "PrivacyHub",
-        "new_rule": "➕ Жаңа ереже",
-        "delete": "🗑️ Жою",
-        "save": "💾 Сақтау",
-        "preview": "👁️ Алдын ала қарау",
-        "print_pdf": "📄 PDF-ке басып шығару",
-        "downloads": "📥 Жүктеулер",
-        "open_exports": "📂 Экспорттау бумағын ашу",
-        "search": "Іздеу",
-        "rule_name": "Ереже атауы:",
-        "version": "Нұсқа:",
-        "status": "Күй:",
-        "content": "📝 Ереже мазмұны",
-        "images": "🖼️ Тіркелген суреттер:",
-        "add_image": "➕ Скриншот қосу",
-        "remove_image": "❌ Таңдалғанды жою",
-        "templates": "⚡ Үлгілер:",
-        "draft": "Жоба",
-        "under_review": "Қаралуда",
-        "approved": "Бекітілді",
-        "archived": "Мұрағат",
-        "publish": "🌐 Жариялау",
-        "public_rules": "📢 Басқа ережелер",
-        "settings": "⚙️ Параметрлер",
-        "theme_dark": "Қараңғы тема",
-        "theme_light": "Жарық тема",
-        "language": "Тіл",
-        "copy_link": "Сілтемені көшіру",
-        "share_msg": "Жариялау коды алмасу буферіне көшірілді:",
+        "app_title": "PrivacyHub", "new_rule": "➕ Жаңа ереже", "delete": "🗑️ Жою",
+        "save": "💾 Сақтау", "preview": "👁️ Алдын ала қарау", "print_pdf": "📄 PDF-ке басып шығару",
+        "downloads": "📥 Жүктеулер", "open_exports": "📂 Экспорттау бумасын ашу",
+        "search": "Іздеу", "rule_name": "Ереже атауы:", "version": "Нұсқа:",
+        "status": "Күй:", "content": "📝 Ереже мазмұны", "images": "🖼️ Тіркелген суреттер:",
+        "add_image": "➕ Скриншот қосу", "remove_image": "❌ Таңдалғанды жою",
+        "templates": "⚡ Үлгілер:", "draft": "Жоба", "under_review": "Қаралуда",
+        "approved": "Бекітілді", "archived": "Мұрағат", "publish": "🌐 Жариялау",
+        "public_rules": "📢 Басқа ережелер", "settings": "⚙️ Параметрлер",
+        "theme_dark": "Қараңғы тема", "theme_light": "Жарық тема", "language": "Тіл",
+        "copy_link": "Сілтемені көшіру", "share_msg": "Жариялау коды алмасу буферіне көшірілді:",
         "confirm_publish": "Ережені жариялау? Ортақ код жасалады.",
-        "published": "Жарияланды",
-        "public_rules_title": "📢 Ашық ережелер",
-        "save_to_my": "Менің ережелеріме сақтау",
-        "select_rule_warn": "Алдымен ережені таңдаңыз немесе жасаңыз.",
-        "translate_wait": "Аудару...",
-        "translate_done": "Аударма аяқталды.",
-        "ok": "OK",
-        "cancel": "Бас тарту",
-        "rules_list": "📁 Ережелер репозиторийі",
-        "choose_theme": "Тема",
-        "choose_lang": "Тіл",
-        "apply": "Қолдану",
-        "restart_needed": "Параметрлер қолданылды. Тема жаңартылды.",
-        "status_ready": "Дайын",
-        "saved": "Сақталды",
-        "deleted": "Жойылды",
-        "published_rules": "PrivacyHub жарияланған ережелері",
+        "published": "Жарияланды", "public_rules_title": "📢 Ашық ережелер",
+        "save_to_my": "Менің ережелеріме сақтау", "select_rule_warn": "Алдымен ережені таңдаңыз немесе жасаңыз.",
+        "translate_wait": "Аудару...", "translate_done": "Аударма аяқталды.",
+        "ok": "OK", "cancel": "Бас тарту", "rules_list": "📁 Ережелер репозиторийі",
+        "choose_theme": "Тема", "choose_lang": "Тіл", "apply": "Қолдану",
+        "restart_needed": "Параметрлер қолданылды. Тема жаңартылды.", "status_ready": "Дайын",
+        "saved": "Сақталды", "deleted": "Жойылды", "published_rules": "PrivacyHub жарияланған ережелері",
+        "login": "🚪 Кіру", "logout": "🚪 Шығу", "register": "📝 Тіркелу",
+        "email": "Email", "password": "Құпия сөз", "confirm_password": "Құпия сөзді растаңыз",
+        "login_btn": "Кіру", "register_btn": "Тіркелу", "login_google": "🔑 Google арқылы кіру",
+        "logged_in": "Кіру сәтті!", "logged_out": "Сіз шықтыңыз.",
+        "invalid_credentials": "Қате email немесе құпия сөз.", "email_exists": "Email бұрын тіркелген.",
+        "password_mismatch": "Құпия сөздер сәйкес келмейді.", "password_short": "Құпия сөз тым қысқа (мин 4).",
+        "invalid_email": "Қате email.", "auth": "Кіру",
     },
 }
 
 PUBLIC_RULES = [
     {
-        "id": "ph1",
-        "title": "PrivacyHub Privacy Policy",
-        "version": "1.0",
-        "status": "Approved",
-        "content": "1. Introduction\n\nPrivacyHub (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application and services.\n\n2. Information We Collect\n\nWe may collect personal information that you voluntarily provide to us when registering, expressing interest in our services, or otherwise contacting us. This includes: name, email address, phone number, and any other information you choose to provide.\n\n3. Use of Your Information\n\nWe use the information we collect to: provide and maintain our services; improve user experience; communicate with you; ensure security and prevent fraud; comply with legal obligations.\n\n4. Sharing Your Information\n\nWe do not sell, trade, or otherwise transfer your personal information to outside parties except as described in this policy. We may share information with trusted third parties who assist us in operating our services, provided they agree to keep the information confidential.\n\n5. Data Security\n\nWe implement a variety of security measures to maintain the safety of your personal information. However, no method of transmission over the Internet or electronic storage is 100% secure.\n\n6. Your Rights\n\nDepending on your location, you may have rights including: access to your personal data; rectification of inaccurate data; erasure of your data; restriction of processing; data portability; and the right to object to processing.\n\n7. Changes to This Policy\n\nWe may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the \"Last Updated\" date.\n\n8. Contact Us\n\nIf you have questions about this Privacy Policy, please contact us through the application or at support@privacyhub.local.",
-        "lang": "en",
-        "author": "PrivacyHub",
-        "date": "2026-08-29",
+        "id": "ph1", "title": "PrivacyHub Privacy Policy", "version": "1.0", "status": "Approved",
+        "content": "1. Introduction\n\nPrivacyHub (\"we\", \"our\", or \"us\") is committed to protecting your privacy...\n\n2. Information We Collect\n\nWe may collect personal information that you voluntarily provide...\n\n3. Use of Your Information\n\nWe use the information we collect to: provide and maintain our services...\n\n4. Sharing Your Information\n\nWe do not sell, trade, or otherwise transfer your personal information...\n\n5. Data Security\n\nWe implement a variety of security measures...\n\n6. Your Rights\n\nDepending on your location, you may have rights including...\n\n7. Changes to This Policy\n\nWe may update this Privacy Policy from time to time...\n\n8. Contact Us\n\nIf you have questions about this Privacy Policy, please contact us...",
+        "lang": "en", "author": "PrivacyHub", "date": "2026-08-29",
     },
     {
-        "id": "ph2",
-        "title": "PrivacyHub Условия использования",
-        "version": "1.0",
-        "status": "Approved",
-        "content": "1. Общие положения\n\nНастоящие Условия использования (далее — «Условия») регулируют отношения между компанией PrivacyHub и пользователем при использовании приложения и связанных сервисов.\n\n2. Принятие условий\n\nРегистрируясь или используя наше приложение, вы подтверждаете, что прочитали, поняли и согласны соблюдать настоящие Условия и Политику конфиденциальности.\n\n3. Права и обязанности пользователя\n\nПользователь обязуется: предоставлять достоверную информацию; не нарушать работу приложения; не использовать сервис для незаконных целей; не распространять вредоносное ПО.\n\n4. Интеллектуальная собственность\n\nВсе материалы, доступные через приложение, включая текст, графику, логотипы, являются собственностью PrivacyHub или её лицензиаров.\n\n5. Ограничение ответственности\n\nPrivacyHub не несёт ответственности за любые прямые, косвенные, случайные или штрафные убытки, возникшие в результате использования или невозможности использования сервиса.\n\n6. Изменение условий\n\nМы оставляем за собой право в любое время изменять или заменять настоящие Условия. Продолжение использования сервиса после внесения изменений означает принятие новых условий.\n\n7. Прекращение действия\n\nМы можем приостановить или прекратить ваш доступ к сервису в любое время без предварительного уведомления при нарушении настоящих Условий.\n\n8. Контакты\n\nПо всем вопросам, связанным с настоящими Условиями, обращайтесь через форму обратной связи в приложении.",
-        "lang": "ru",
-        "author": "PrivacyHub",
-        "date": "2026-08-29",
+        "id": "ph2", "title": "PrivacyHub Условия использования", "version": "1.0", "status": "Approved",
+        "content": "1. Общие положения\n\nНастоящие Условия использования регулируют отношения...\n\n2. Принятие условий\n\nРегистрируясь или используя наше приложение...\n\n3. Права и обязанности пользователя\n\nПользователь обязуется: предоставлять достоверную информацию...\n\n4. Интеллектуальная собственность\n\nВсе материалы, доступные через приложение...\n\n5. Ограничение ответственности\n\nPrivacyHub не несёт ответственности...\n\n6. Изменение условий\n\nМы оставляем за собой право в любое время изменять...\n\n7. Прекращение действия\n\nМы можем приостановить или прекратить ваш доступ...\n\n8. Контакты\n\nПо всем вопросам обращайтесь через форму обратной связи...",
+        "lang": "ru", "author": "PrivacyHub", "date": "2026-08-29",
     },
     {
-        "id": "ph3",
-        "title": "PrivacyHub Cookie саясаты",
-        "version": "1.0",
-        "status": "Approved",
-        "content": "1. Кіріспе\n\nБұл Cookie саясаты PrivacyHub қолданбасында cookie файлдары мен ұқсас технологияларды қалай қолданатынымызды түсіндіреді.\n\n2. Cookie деген не?\n\nCookie — бұл веб-сайт сіздің құрылғыңызға сақтайтын шағын деректер файлы. Ол сіздің тараптағы қызметтерді жақсартуға және сізді тануға көмектеседі.\n\n3. Қандай cookie қолданамыз?\n\nҚажетті cookie: Бұл cookie қолданбаның дұрыс жұмыс істеуі үшін қажет.\nАналитикалық cookie: Бұл cookie бізге қолданушылар қалай өзара әрекеттенетінін түсінуге көмектеседі.\nФункционалдық cookie: Бұл cookie бізге сіздің баптауларыңызды есте сақтауға мүмкіндік береді.\n\n4. Cookie басқару\n\nСіз браузеріңіздің баптаулары арқылы cookie-лерді өшіре аласыз. Алайда, бұл қолданбаның кейбір функцияларына әсер етуі мүмкін.\n\n5. Үшінші тараптар\n\nБіз үшінші тараптардың cookie-лерін қолданбауға тырысамыз. Егер бұдай болса, біз сізге хабарлаймыз.\n\n6. Саясатқа өзгерістер\n\nБұл саясатты кез келген уақытта жаңарта аламыз. Өзгерістер осы бетте жарияланған сәттен бастап күшіне енеді.\n\n7. Байланыс\n\nCookie саясаты бойынша сұрақтар болса, қолданба ішіндегі кері байланыс формасы арқылы хабарласыңыз.",
-        "lang": "kk",
-        "author": "PrivacyHub",
-        "date": "2026-08-29",
+        "id": "ph3", "title": "PrivacyHub Cookie саясаты", "version": "1.0", "status": "Approved",
+        "content": "1. Кіріспе\n\nБұл Cookie саясаты PrivacyHub қолданбасында cookie файлдары...\n\n2. Cookie деген не?\n\nCookie — бұл веб-сайт сіздің құрылғыңызға сақтайтын шағын деректер файлы...\n\n3. Қандай cookie қолданамыз?\n\nҚажетті cookie, Аналитикалық cookie, Функционалдық cookie...\n\n4. Cookie басқару\n\nСіз браузеріңіздің баптаулары арқылы cookie-лерді өшіре аласыз...\n\n5. Үшінші тараптар\n\nБіз үшінші тараптардың cookie-лерін қолданбауға тырысамыз...\n\n6. Саясатқа өзгерістер\n\nБұл саясатты кез келген уақытта жаңарта аламыз...\n\n7. Байланыс\n\nCookie саясаты бойынша сұрақтар болса...",
+        "lang": "kk", "author": "PrivacyHub", "date": "2026-08-29",
     },
 ]
 
 DEFAULT_TEMPLATES = {
-    "Общие положения": "1.1. Настоящие Правила конфиденциальности (далее — «Правила») определяют порядок обработки и защиты персональных данных пользователей.\n\n1.2. Используя сервис, вы выражаете согласие с условиями настоящих Правил.",
+    "Общие положения": "1.1. Настоящие Правила конфиденциальности определяют порядок обработки и защиты персональных данных пользователей.\n\n1.2. Используя сервис, вы выражаете согласие с условиями настоящих Правил.",
     "Сбор данных": "2.1. Мы собираем только те данные, которые необходимы для предоставления услуг.\n\n2.2. К категориям собираемых данных относятся: имя, адрес электронной почты, технические данные устройства.",
     "Хранение и защита": "3.1. Данные хранятся на защищённых серверах.\n\n3.2. Доступ к данным имеют только уполномоченные сотрудники.\n\n3.3. Мы применяем шифрование и другие меры защиты.",
     "Передача третьим лицам": "4.1. Персональные данные не передаются третьим лицам без согласия пользователя.\n\n4.2. Исключение составляют случаи, предусмотренные законодательством.",
@@ -249,27 +173,44 @@ def save_database(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def migrate_db(db):
+    changed = False
+    if "rules" not in db:
+        db["rules"] = {}
+        for k in list(db.keys()):
+            if not k.startswith("_") and k not in ("downloads", "rules") and isinstance(db[k], dict) and "title" in db[k]:
+                db["rules"][k] = db.pop(k)
+                changed = True
+    if "downloads" not in db:
+        db["downloads"] = []
+        changed = True
+    if "_settings" not in db:
+        db["_settings"] = {"theme": "dark", "lang": "en"}
+        changed = True
+    if "_users" not in db:
+        db["_users"] = []
+        changed = True
+    if "_current_user" not in db:
+        db["_current_user"] = None
+        changed = True
+    return changed
+
+
 class PrivacyHubApp:
     def __init__(self, root):
         self.root = root
         self.db = load_database()
+        if migrate_db(self.db):
+            save_database(self.db)
         self.current_rule_id = None
-
-        if "downloads" not in self.db:
-            self.db["downloads"] = []
-        if "_settings" not in self.db:
-            self.db["_settings"] = {"theme": "dark", "lang": "en"}
-        self.settings = self.db["_settings"]
+        self.settings = self.db.setdefault("_settings", {"theme": "dark", "lang": "en"})
         self.lang = self.settings.get("lang", "en")
         self.theme = self.settings.get("theme", "dark")
-
         self._tk_images = []
         self._thumb_size = (120, 120)
-
         self.style = ttk.Style()
         self.root.title(f"{self._t('app_title')} v{APP_VERSION}")
         self.root.geometry("1600x950")
-
         self._build_ui()
         self._refresh_list()
 
@@ -278,13 +219,9 @@ class PrivacyHubApp:
 
     def _apply_widget_colors(self):
         if self.theme == "dark":
-            bg = "#1e1e1e"
-            fg = "#e0e0e0"
-            select_bg = "#0d6efd"
+            bg, fg, select_bg = "#1e1e1e", "#e0e0e0", "#0d6efd"
         else:
-            bg = "#ffffff"
-            fg = "#212529"
-            select_bg = "#0d6efd"
+            bg, fg, select_bg = "#ffffff", "#212529", "#0d6efd"
         self.rule_list.config(bg=bg, fg=fg, selectbackground=select_bg)
         self.text_editor.config(bg=bg, fg=fg, insertbackground=fg)
         self.images_listbox.config(bg=bg, fg=fg, selectbackground=select_bg)
@@ -292,9 +229,7 @@ class PrivacyHubApp:
     def _build_ui(self):
         toolbar = ttk.Frame(self.root, padding=5)
         toolbar.pack(fill=X, side=TOP)
-
         ttk.Label(toolbar, text=f"🛡️ {self._t('app_title')}", font=("Segoe UI", 16, "bold")).pack(side=LEFT, padx=10)
-
         ttk.Button(toolbar, text=self._t("new_rule"), bootstyle=SUCCESS, command=self._create_new_rule).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("delete"), bootstyle=DANGER, command=self._delete_current_rule).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("save"), bootstyle=PRIMARY, command=self._save_current_rule).pack(side=LEFT, padx=5)
@@ -306,6 +241,10 @@ class PrivacyHubApp:
         ttk.Button(toolbar, text=self._t("settings"), bootstyle=SECONDARY, command=self._show_settings).pack(side=LEFT, padx=5)
         ttk.Button(toolbar, text=self._t("open_exports"), bootstyle=SECONDARY, command=self._open_exports_folder).pack(side=LEFT, padx=5)
 
+        self.auth_btn = ttk.Button(toolbar, text=self._t("login"), bootstyle=SECONDARY, command=self._show_auth)
+        self.auth_btn.pack(side=LEFT, padx=5)
+        self._update_auth_ui()
+
         search_frame = ttk.Frame(toolbar)
         search_frame.pack(side=RIGHT, padx=10)
         self.search_var = tk.StringVar()
@@ -315,44 +254,34 @@ class PrivacyHubApp:
 
         paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, bg="#222222" if self.theme == "dark" else "#cccccc")
         paned.pack(fill=BOTH, expand=True, padx=5, pady=5)
-
         left_frame = ttk.Frame(paned, width=340)
         paned.add(left_frame, minsize=280)
-
         ttk.Label(left_frame, text=self._t("rules_list"), font=("Segoe UI", 12, "bold")).pack(anchor=W, padx=10, pady=(10, 5))
         self.rule_list = tk.Listbox(left_frame, bg="#1e1e1e", fg="#e0e0e0", selectbackground="#0d6efd",
                                     font=("Consolas", 11), borderwidth=0, highlightthickness=0)
         self.rule_list.pack(fill=BOTH, expand=True, padx=10, pady=5)
         self.rule_list.bind("<<ListboxSelect>>", self._on_select_rule)
-
         ttk.Scrollbar(self.rule_list, command=self.rule_list.yview, bootstyle="round")
-
         self.stats_label = ttk.Label(left_frame, text=f"{self._t('rules_list')}: 0", font=("Segoe UI", 10))
         self.stats_label.pack(anchor=W, padx=10, pady=5)
 
         right_frame = ttk.Frame(paned)
         paned.add(right_frame)
-
         meta_frame = ttk.Frame(right_frame, padding=10)
         meta_frame.pack(fill=X)
-
         ttk.Label(meta_frame, text=self._t("rule_name"), font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky=W, pady=5)
         self.title_var = tk.StringVar()
         self.title_entry = ttk.Entry(meta_frame, textvariable=self.title_var, font=("Segoe UI", 12))
         self.title_entry.grid(row=0, column=1, sticky=EW, pady=5, padx=10)
-
         ttk.Label(meta_frame, text=self._t("version"), font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky=W, pady=5)
         self.version_var = tk.StringVar(value="1.0")
         ttk.Entry(meta_frame, textvariable=self.version_var, font=("Segoe UI", 11), width=10).grid(row=1, column=1, sticky=W, pady=5, padx=10)
-
         ttk.Label(meta_frame, text=self._t("status"), font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky=W, pady=5)
         statuses = [self._t("draft"), self._t("under_review"), self._t("approved"), self._t("archived")]
         self.status_var = tk.StringVar(value=self._t("draft"))
         self.status_combo = ttk.Combobox(meta_frame, values=statuses, textvariable=self.status_var, width=20)
         self.status_combo.grid(row=2, column=1, sticky=W, pady=5, padx=10)
-
         meta_frame.columnconfigure(1, weight=1)
-
         ttk.Separator(right_frame, orient=HORIZONTAL).pack(fill=X, padx=10)
 
         editor_frame = ttk.Frame(right_frame, padding=10)
@@ -369,7 +298,6 @@ class PrivacyHubApp:
         ttk.Label(img_header, text=self._t("images"), font=("Segoe UI", 10, "bold")).pack(side=LEFT)
         ttk.Button(img_header, text=self._t("add_image"), bootstyle=SUCCESS, command=self._add_image).pack(side=LEFT, padx=10)
         ttk.Button(img_header, text=self._t("remove_image"), bootstyle=DANGER, command=self._remove_image).pack(side=LEFT)
-
         self.images_listbox = tk.Listbox(img_frame_outer, bg="#1e1e1e", fg="#e0e0e0", selectbackground="#0d6efd",
                                          font=("Consolas", 10), borderwidth=0, highlightthickness=0, height=6)
         self.images_listbox.pack(fill=X, pady=5)
@@ -385,25 +313,106 @@ class PrivacyHubApp:
 
         self.status_bar = ttk.Label(self.root, text=self._t("status_ready"), relief=SUNKEN, anchor=W, padding=5)
         self.status_bar.pack(fill=X, side=BOTTOM)
-
         self._apply_widget_colors()
+
+    def _update_auth_ui(self):
+        user = self.db.get("_current_user")
+        if user:
+            self.auth_btn.config(text=f"👤 {user} | {self._t('logout')}", command=self._do_logout)
+        else:
+            self.auth_btn.config(text=self._t("login"), command=self._show_auth)
+
+    def _show_auth(self):
+        win = Toplevel(self.root)
+        win.title(self._t("auth"))
+        win.geometry("400x380")
+        win.transient(self.root)
+        notebook = ttk.Notebook(win)
+        notebook.pack(fill=BOTH, expand=True, padx=12, pady=12)
+
+        # Login tab
+        login_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(login_frame, text=self._t("login"))
+        ttk.Label(login_frame, text=self._t("email")).pack(anchor=W, pady=(8, 2))
+        email_var = tk.StringVar()
+        ttk.Entry(login_frame, textvariable=email_var).pack(fill=X, pady=2)
+        ttk.Label(login_frame, text=self._t("password")).pack(anchor=W, pady=(8, 2))
+        pwd_var = tk.StringVar()
+        ttk.Entry(login_frame, textvariable=pwd_var, show="*").pack(fill=X, pady=2)
+
+        def do_login():
+            email = email_var.get().strip()
+            pwd = pwd_var.get()
+            for u in self.db.get("_users", []):
+                if u["email"] == email and u.get("password_hash") == base64.b64encode(pwd.encode()).decode():
+                    self.db["_current_user"] = email
+                    save_database(self.db)
+                    self._update_auth_ui()
+                    win.destroy()
+                    messagebox.showinfo(self._t("app_title"), self._t("logged_in"))
+                    return
+            messagebox.showerror(self._t("app_title"), self._t("invalid_credentials"))
+
+        ttk.Button(login_frame, text=self._t("login_btn"), bootstyle=PRIMARY, command=do_login).pack(pady=14)
+        ttk.Button(login_frame, text=self._t("login_google"), bootstyle=INFO, command=lambda: webbrowser.open("https://accounts.google.com/signin")).pack()
+
+        # Register tab
+        reg_frame = ttk.Frame(notebook, padding=10)
+        notebook.add(reg_frame, text=self._t("register"))
+        ttk.Label(reg_frame, text=self._t("email")).pack(anchor=W, pady=(8, 2))
+        reg_email = tk.StringVar()
+        ttk.Entry(reg_frame, textvariable=reg_email).pack(fill=X, pady=2)
+        ttk.Label(reg_frame, text=self._t("password")).pack(anchor=W, pady=(8, 2))
+        reg_pwd = tk.StringVar()
+        ttk.Entry(reg_frame, textvariable=reg_pwd, show="*").pack(fill=X, pady=2)
+        ttk.Label(reg_frame, text=self._t("confirm_password")).pack(anchor=W, pady=(8, 2))
+        reg_pwd2 = tk.StringVar()
+        ttk.Entry(reg_frame, textvariable=reg_pwd2, show="*").pack(fill=X, pady=2)
+
+        def do_register():
+            email = reg_email.get().strip()
+            pwd = reg_pwd.get()
+            pwd2 = reg_pwd2.get()
+            if "@" not in email or "." not in email.split("@")[-1]:
+                messagebox.showwarning(self._t("app_title"), self._t("invalid_email"))
+                return
+            if len(pwd) < 4:
+                messagebox.showwarning(self._t("app_title"), self._t("password_short"))
+                return
+            if pwd != pwd2:
+                messagebox.showwarning(self._t("app_title"), self._t("password_mismatch"))
+                return
+            users = self.db.setdefault("_users", [])
+            if any(u["email"] == email for u in users):
+                messagebox.showwarning(self._t("app_title"), self._t("email_exists"))
+                return
+            users.append({"email": email, "password_hash": base64.b64encode(pwd.encode()).decode(), "name": email.split("@")[0]})
+            self.db["_current_user"] = email
+            save_database(self.db)
+            self._update_auth_ui()
+            win.destroy()
+            messagebox.showinfo(self._t("app_title"), "Registered successfully!")
+
+        ttk.Button(reg_frame, text=self._t("register_btn"), bootstyle=PRIMARY, command=do_register).pack(pady=14)
+
+    def _do_logout(self):
+        self.db["_current_user"] = None
+        save_database(self.db)
+        self._update_auth_ui()
+        self.status_bar.config(text=self._t("logged_out"))
 
     def _refresh_list(self):
         self.rule_list.delete(0, tk.END)
         query = self.search_var.get().lower()
         count = 0
-        for rid, rule in self.db.items():
-            if rid.startswith("_") or not isinstance(rule, dict):
+        rules = self.db.get("rules", {})
+        for rid, rule in rules.items():
+            if not isinstance(rule, dict):
                 continue
             title = rule.get("title", "Untitled")
             if query in title.lower() or not query:
                 status = rule.get("status", self._t("draft"))
-                emoji_map = {
-                    self._t("draft"): "📝",
-                    self._t("under_review"): "👀",
-                    self._t("approved"): "✅",
-                    self._t("archived"): "📦",
-                }
+                emoji_map = {self._t("draft"): "📝", self._t("under_review"): "👀", self._t("approved"): "✅", self._t("archived"): "📦"}
                 emoji = emoji_map.get(status, "📝")
                 img_count = len(rule.get("images", []))
                 img_indicator = f" 🖼️{img_count}" if img_count else ""
@@ -417,7 +426,7 @@ class PrivacyHubApp:
             return
         index = selection[0]
         query = self.search_var.get().lower()
-        matched = [(rid, r) for rid, r in self.db.items() if isinstance(r, dict) and not rid.startswith("_") and (not query or query in r.get("title", "").lower())]
+        matched = [(rid, r) for rid, r in self.db.get("rules", {}).items() if isinstance(r, dict) and (not query or query in r.get("title", "").lower())]
         if index < len(matched):
             rid, rule = matched[index]
             self.current_rule_id = rid
@@ -432,9 +441,12 @@ class PrivacyHubApp:
     def _refresh_images_list(self):
         self.images_listbox.delete(0, tk.END)
         self.thumb_label.config(image="", text="(preview)")
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id:
             return
-        images = self.db[self.current_rule_id].get("images", [])
+        rules = self.db.get("rules", {})
+        if self.current_rule_id not in rules:
+            return
+        images = rules[self.current_rule_id].get("images", [])
         for img_path in images:
             self.images_listbox.insert(tk.END, os.path.basename(img_path))
 
@@ -443,7 +455,7 @@ class PrivacyHubApp:
         if not selection:
             return
         idx = selection[0]
-        images = self.db.get(self.current_rule_id, {}).get("images", [])
+        images = self.db.get("rules", {}).get(self.current_rule_id, {}).get("images", [])
         if idx < len(images):
             self._show_thumbnail(images[idx])
 
@@ -462,13 +474,10 @@ class PrivacyHubApp:
             self.thumb_label.config(image="", text=f"❌ Error: {e}")
 
     def _add_image(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        filepaths = filedialog.askopenfilenames(
-            title="Select images",
-            filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp *.gif"), ("All files", "*.*")]
-        )
+        filepaths = filedialog.askopenfilenames(title="Select images", filetypes=[("Images", "*.png *.jpg *.jpeg *.bmp *.gif"), ("All files", "*.*")])
         if not filepaths:
             return
         ensure_dirs()
@@ -477,7 +486,7 @@ class PrivacyHubApp:
             dest = os.path.join(IMAGES_DIR, new_name)
             try:
                 shutil.copy2(fp, dest)
-                self.db[self.current_rule_id].setdefault("images", []).append(dest)
+                self.db["rules"][self.current_rule_id].setdefault("images", []).append(dest)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to copy {fp}:\n{e}")
         save_database(self.db)
@@ -486,14 +495,14 @@ class PrivacyHubApp:
         self.status_bar.config(text=f"Images added: {len(filepaths)}")
 
     def _remove_image(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             return
         selection = self.images_listbox.curselection()
         if not selection:
             messagebox.showwarning(self._t("app_title"), "Select an image to remove.")
             return
         idx = selection[0]
-        images = self.db[self.current_rule_id].get("images", [])
+        images = self.db["rules"][self.current_rule_id].get("images", [])
         if idx < len(images):
             path = images[idx]
             if messagebox.askyesno("Confirm", f"Remove image?\n{os.path.basename(path)}"):
@@ -513,14 +522,10 @@ class PrivacyHubApp:
         if not title:
             return
         rid = f"rule_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        self.db[rid] = {
-            "title": title,
-            "version": "1.0",
-            "status": self._t("draft"),
-            "content": "",
-            "images": [],
-            "created": datetime.now().isoformat(),
-            "updated": datetime.now().isoformat(),
+        self.db.setdefault("rules", {})[rid] = {
+            "title": title, "version": "1.0", "status": self._t("draft"),
+            "content": "", "images": [],
+            "created": datetime.now().isoformat(), "updated": datetime.now().isoformat(),
         }
         save_database(self.db)
         self._refresh_list()
@@ -529,7 +534,7 @@ class PrivacyHubApp:
 
     def _select_by_title(self, title):
         query = self.search_var.get().lower()
-        matched = [(rid, r) for rid, r in self.db.items() if isinstance(r, dict) and not rid.startswith("_") and (not query or query in r.get("title", "").lower())]
+        matched = [(rid, r) for rid, r in self.db.get("rules", {}).items() if isinstance(r, dict) and (not query or query in r.get("title", "").lower())]
         for i, (rid, r) in enumerate(matched):
             if r.get("title") == title:
                 self.rule_list.selection_clear(0, tk.END)
@@ -539,31 +544,31 @@ class PrivacyHubApp:
                 break
 
     def _save_current_rule(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        self.db[self.current_rule_id]["title"] = self.title_var.get()
-        self.db[self.current_rule_id]["version"] = self.version_var.get()
-        self.db[self.current_rule_id]["status"] = self.status_var.get()
-        self.db[self.current_rule_id]["content"] = self.text_editor.get("1.0", tk.END).strip()
-        self.db[self.current_rule_id]["updated"] = datetime.now().isoformat()
+        self.db["rules"][self.current_rule_id]["title"] = self.title_var.get()
+        self.db["rules"][self.current_rule_id]["version"] = self.version_var.get()
+        self.db["rules"][self.current_rule_id]["status"] = self.status_var.get()
+        self.db["rules"][self.current_rule_id]["content"] = self.text_editor.get("1.0", tk.END).strip()
+        self.db["rules"][self.current_rule_id]["updated"] = datetime.now().isoformat()
         save_database(self.db)
         self._refresh_list()
         self.status_bar.config(text=self._t("saved"))
 
     def _delete_current_rule(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        title = self.db[self.current_rule_id].get("title", "")
+        title = self.db["rules"][self.current_rule_id].get("title", "")
         if messagebox.askyesno("Confirm", f'Delete rule "{title}"?'):
-            for img_path in self.db[self.current_rule_id].get("images", []):
+            for img_path in self.db["rules"][self.current_rule_id].get("images", []):
                 try:
                     if os.path.exists(img_path):
                         os.remove(img_path)
                 except Exception:
                     pass
-            del self.db[self.current_rule_id]
+            del self.db["rules"][self.current_rule_id]
             save_database(self.db)
             self.current_rule_id = None
             self.title_var.set("")
@@ -580,37 +585,31 @@ class PrivacyHubApp:
         self.text_editor.insert(tk.INSERT, f"\n\n{content}\n")
 
     def _show_preview(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        rule = self.db[self.current_rule_id]
+        rule = self.db["rules"][self.current_rule_id]
         preview = Toplevel(self.root)
         preview.title(f"{self._t('preview')}: {rule.get('title', 'Untitled')}")
         preview.geometry("900x750")
         preview.configure(bg="#1e1e1e" if self.theme == "dark" else "#ffffff")
-
         header = ttk.Frame(preview, padding=15)
         header.pack(fill=X)
         ttk.Label(header, text=rule.get("title", ""), font=("Segoe UI", 16, "bold")).pack(anchor=W)
         ttk.Label(header, text=f"{self._t('version')}: {rule.get('version', '1.0')} | {self._t('status')}: {rule.get('status', self._t('draft'))}", font=("Segoe UI", 11)).pack(anchor=W, pady=5)
-
         ttk.Separator(preview, orient=HORIZONTAL).pack(fill=X, padx=15)
         content_frame = ttk.Frame(preview, padding=15)
         content_frame.pack(fill=BOTH, expand=True)
-
         bg = "#1e1e1e" if self.theme == "dark" else "#ffffff"
         fg = "#e0e0e0" if self.theme == "dark" else "#212529"
-        text_widget = tk.Text(content_frame, wrap=tk.WORD, font=("Consolas", 12), bg=bg, fg=fg,
-                              borderwidth=0, highlightthickness=0, state=tk.DISABLED, padx=10, pady=10)
+        text_widget = tk.Text(content_frame, wrap=tk.WORD, font=("Consolas", 12), bg=bg, fg=fg, borderwidth=0, highlightthickness=0, state=tk.DISABLED, padx=10, pady=10)
         text_widget.pack(fill=BOTH, expand=True)
         sb = ttk.Scrollbar(content_frame, command=text_widget.yview)
         text_widget.config(yscrollcommand=sb.set)
-
         text_widget.config(state=tk.NORMAL)
         text_widget.delete("1.0", tk.END)
         text_widget.insert(tk.END, rule.get("content", ""))
         text_widget.config(state=tk.DISABLED)
-
         if rule.get("images"):
             img_frame = ttk.Frame(preview, padding=15)
             img_frame.pack(fill=X)
@@ -628,7 +627,6 @@ class PrivacyHubApp:
                         lbl.pack(side=LEFT, padx=5)
                     except Exception:
                         ttk.Label(img_container, text=f"⚠️ {os.path.basename(img_path)}").pack(side=LEFT, padx=5)
-
         btn_frame = ttk.Frame(preview, padding=15)
         btn_frame.pack(fill=X)
         ttk.Button(btn_frame, text="📤 Export .txt", bootstyle=INFO, command=lambda: [preview.destroy(), self._export_txt()]).pack(side=LEFT, padx=5)
@@ -640,15 +638,9 @@ class PrivacyHubApp:
         if "downloads" not in self.db:
             self.db["downloads"] = []
         rule_title = ""
-        if self.current_rule_id and self.current_rule_id in self.db and isinstance(self.db[self.current_rule_id], dict):
-            rule_title = self.db[self.current_rule_id].get("title", "")
-        self.db["downloads"].insert(0, {
-            "rule_name": rule_title,
-            "format": fmt,
-            "filepath": filepath,
-            "filename": os.path.basename(filepath),
-            "timestamp": datetime.now().isoformat(),
-        })
+        if self.current_rule_id and self.current_rule_id in self.db.get("rules", {}) and isinstance(self.db["rules"][self.current_rule_id], dict):
+            rule_title = self.db["rules"][self.current_rule_id].get("title", "")
+        self.db["downloads"].insert(0, {"rule_name": rule_title, "format": fmt, "filepath": filepath, "filename": os.path.basename(filepath), "timestamp": datetime.now().isoformat()})
         save_database(self.db)
 
     def _open_exports_folder(self):
@@ -665,7 +657,6 @@ class PrivacyHubApp:
         win = Toplevel(self.root)
         win.title(self._t("downloads"))
         win.geometry("900x550")
-
         ttk.Label(win, text=self._t("downloads"), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=10)
         tv_frame = ttk.Frame(win, padding=10)
         tv_frame.pack(fill=BOTH, expand=True)
@@ -683,22 +674,13 @@ class PrivacyHubApp:
         tree.configure(yscrollcommand=vsb.set)
         tree.pack(side=LEFT, fill=BOTH, expand=True)
         vsb.pack(side=RIGHT, fill=Y)
-
         for item in self.db.get("downloads", []):
-            tree.insert("", tk.END, values=(
-                item.get("rule_name", ""),
-                item.get("format", "").upper(),
-                item.get("filename", ""),
-                item.get("timestamp", "")[:19].replace("T", " "),
-            ), tags=(item.get("filepath", ""),))
-
+            tree.insert("", tk.END, values=(item.get("rule_name", ""), item.get("format", "").upper(), item.get("filename", ""), item.get("timestamp", "")[:19].replace("T", " ")), tags=(item.get("filepath", ""),))
         def on_double_click(event):
             sel = tree.selection()
             if sel:
-                filepath = tree.item(sel[0], "tags")[0]
-                self._open_file_folder(filepath)
+                self._open_file_folder(tree.item(sel[0], "tags")[0])
         tree.bind("<Double-1>", on_double_click)
-
         btn_frame = ttk.Frame(win, padding=10)
         btn_frame.pack(fill=X)
         ttk.Button(btn_frame, text="📂 Open file folder", bootstyle=PRIMARY, command=lambda: on_double_click(None)).pack(side=LEFT, padx=5)
@@ -706,27 +688,17 @@ class PrivacyHubApp:
         ttk.Button(btn_frame, text="❌ Close", bootstyle=SECONDARY, command=win.destroy).pack(side=RIGHT, padx=5)
 
     def _do_publish(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
         if not messagebox.askyesno(self._t("publish"), self._t("confirm_publish")):
             return
-        rule = self.db[self.current_rule_id]
-        share_obj = {
-            "id": self.current_rule_id,
-            "title": rule.get("title", ""),
-            "version": rule.get("version", "1.0"),
-            "status": rule.get("status", self._t("draft")),
-            "content": rule.get("content", ""),
-            "lang": self.lang,
-            "author": "You",
-            "date": datetime.now().isoformat()[:10],
-        }
+        rule = self.db["rules"][self.current_rule_id]
+        share_obj = {"id": self.current_rule_id, "title": rule.get("title", ""), "version": rule.get("version", "1.0"), "status": rule.get("status", self._t("draft")), "content": rule.get("content", ""), "lang": self.lang, "author": self.db.get("_current_user") or "You", "date": datetime.now().isoformat()[:10]}
         json_str = json.dumps(share_obj, ensure_ascii=False)
         b64 = base64.b64encode(json_str.encode('utf-8')).decode('ascii')
         self.root.clipboard_clear()
         self.root.clipboard_append(b64)
-
         win = Toplevel(self.root)
         win.title(self._t("published"))
         win.geometry("700x200")
@@ -742,7 +714,6 @@ class PrivacyHubApp:
         win = Toplevel(self.root)
         win.title(self._t("public_rules_title"))
         win.geometry("900x600")
-
         ttk.Label(win, text=self._t("public_rules_title"), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=10)
         tv_frame = ttk.Frame(win, padding=10)
         tv_frame.pack(fill=BOTH, expand=True)
@@ -760,10 +731,8 @@ class PrivacyHubApp:
         tree.configure(yscrollcommand=vsb.set)
         tree.pack(side=LEFT, fill=BOTH, expand=True)
         vsb.pack(side=RIGHT, fill=Y)
-
         for pr in PUBLIC_RULES:
             tree.insert("", tk.END, values=(pr["title"], pr["lang"], pr["author"], pr["date"]), tags=(pr["id"],))
-
         def on_double_click(event):
             sel = tree.selection()
             if not sel:
@@ -771,7 +740,6 @@ class PrivacyHubApp:
             pid = tree.item(sel[0], "tags")[0]
             self._show_public_detail(win, pid)
         tree.bind("<Double-1>", on_double_click)
-
         btn_frame = ttk.Frame(win, padding=10)
         btn_frame.pack(fill=X)
         ttk.Button(btn_frame, text=self._t("save_to_my"), bootstyle=PRIMARY, command=lambda: on_double_click(None)).pack(side=LEFT, padx=5)
@@ -788,30 +756,19 @@ class PrivacyHubApp:
         ttk.Label(detail, text=f"Version: {pr['version']} | Status: {pr['status']} | Lang: {pr['lang']}", font=("Segoe UI", 11)).pack(anchor=W, padx=15)
         ttk.Label(detail, text=f"Author: {pr['author']} | Date: {pr['date']}", font=("Segoe UI", 10)).pack(anchor=W, padx=15, pady=5)
         ttk.Separator(detail, orient=HORIZONTAL).pack(fill=X, padx=15, pady=5)
-
         bg = "#1e1e1e" if self.theme == "dark" else "#ffffff"
         fg = "#e0e0e0" if self.theme == "dark" else "#212529"
         text_widget = tk.Text(detail, wrap=tk.WORD, font=("Consolas", 12), bg=bg, fg=fg, padx=10, pady=10)
         text_widget.pack(fill=BOTH, expand=True, padx=15, pady=5)
         text_widget.insert(tk.END, pr["content"])
         text_widget.config(state=tk.DISABLED)
-
         def save_public():
             rid = f"rule_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            self.db[rid] = {
-                "title": pr["title"],
-                "version": pr["version"],
-                "status": pr["status"],
-                "content": pr["content"],
-                "images": [],
-                "created": datetime.now().isoformat(),
-                "updated": datetime.now().isoformat(),
-            }
+            self.db.setdefault("rules", {})[rid] = {"title": pr["title"], "version": pr["version"], "status": pr["status"], "content": pr["content"], "images": [], "created": datetime.now().isoformat(), "updated": datetime.now().isoformat()}
             save_database(self.db)
             self._refresh_list()
             messagebox.showinfo(self._t("app_title"), "Saved to My Rules!")
             detail.destroy()
-
         btn_frame = ttk.Frame(detail, padding=10)
         btn_frame.pack(fill=X)
         ttk.Button(btn_frame, text=self._t("save_to_my"), bootstyle=PRIMARY, command=save_public).pack(side=LEFT, padx=5)
@@ -822,18 +779,14 @@ class PrivacyHubApp:
         win.title(self._t("settings"))
         win.geometry("400x280")
         ttk.Label(win, text=self._t("settings"), font=("Segoe UI", 14, "bold")).pack(anchor=W, padx=15, pady=15)
-
         frame = ttk.Frame(win, padding=10)
         frame.pack(fill=X, padx=15)
-
         ttk.Label(frame, text=self._t("choose_theme")).grid(row=0, column=0, sticky=W, pady=5)
         theme_var = tk.StringVar(value=self.theme)
         ttk.Combobox(frame, values=["dark", "light"], textvariable=theme_var, width=15, state="readonly").grid(row=0, column=1, sticky=W, padx=10)
-
         ttk.Label(frame, text=self._t("choose_lang")).grid(row=1, column=0, sticky=W, pady=5)
         lang_var = tk.StringVar(value=self.lang)
         ttk.Combobox(frame, values=list(LANGS.keys()), textvariable=lang_var, width=15, state="readonly").grid(row=1, column=1, sticky=W, padx=10)
-
         def apply_settings():
             new_theme = theme_var.get()
             new_lang = lang_var.get()
@@ -847,12 +800,11 @@ class PrivacyHubApp:
             save_database(self.db)
             win.destroy()
             if changed:
-                if new_lang != old_lang and self.current_rule_id and self.current_rule_id in self.db and isinstance(self.db[self.current_rule_id], dict):
+                if new_lang != old_lang and self.current_rule_id and self.current_rule_id in self.db.get("rules", {}) and isinstance(self.db["rules"][self.current_rule_id], dict):
                     self._translate_rule_async(old_lang, new_lang)
                 if new_theme != old_theme:
                     self._apply_theme_on_the_fly()
                 messagebox.showinfo(self._t("app_title"), self._t("restart_needed"))
-
         ttk.Button(win, text=self._t("apply"), command=apply_settings).pack(pady=15)
 
     def _apply_theme_on_the_fly(self):
@@ -862,16 +814,13 @@ class PrivacyHubApp:
         self.root.update()
 
     def _translate_rule_async(self, from_lang, to_lang):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             return
         self.status_bar.config(text=self._t("translate_wait"))
-
         def task():
-            rule = self.db[self.current_rule_id]
-            title = rule.get("title", "")
-            content = rule.get("content", "")
-            new_title = self._translate_text(title, from_lang, to_lang)
-            new_content = self._translate_text(content, from_lang, to_lang)
+            rule = self.db["rules"][self.current_rule_id]
+            new_title = self._translate_text(rule.get("title", ""), from_lang, to_lang)
+            new_content = self._translate_text(rule.get("content", ""), from_lang, to_lang)
             self.root.after(0, lambda: self._apply_translation(new_title, new_content))
         threading.Thread(target=task, daemon=True).start()
 
@@ -879,16 +828,13 @@ class PrivacyHubApp:
         if from_lang == to_lang or not text:
             return text
         try:
-            # Split by double newline to avoid huge URLs
             chunks = text.split("\n\n")
             translated = []
             for chunk in chunks:
                 if not chunk.strip():
                     translated.append(chunk)
                     continue
-                # MyMemory has ~500 char limit per request practically
                 if len(chunk) > 450:
-                    # Further split by single newlines or sentences
                     subchunks = chunk.split("\n")
                     sub_trans = []
                     for sc in subchunks:
@@ -898,29 +844,23 @@ class PrivacyHubApp:
                         url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(sc)}&langpair={from_lang}|{to_lang}"
                         with urllib.request.urlopen(url, timeout=15) as resp:
                             data = json.loads(resp.read().decode('utf-8'))
-                            if data.get('responseData') and data['responseData'].get('translatedText'):
-                                sub_trans.append(data['responseData']['translatedText'])
-                            else:
-                                sub_trans.append(sc)
+                            sub_trans.append(data['responseData']['translatedText'] if data.get('responseData') and data['responseData'].get('translatedText') else sc)
                     translated.append("\n".join(sub_trans))
                 else:
                     url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(chunk)}&langpair={from_lang}|{to_lang}"
                     with urllib.request.urlopen(url, timeout=15) as resp:
                         data = json.loads(resp.read().decode('utf-8'))
-                        if data.get('responseData') and data['responseData'].get('translatedText'):
-                            translated.append(data['responseData']['translatedText'])
-                        else:
-                            translated.append(chunk)
+                        translated.append(data['responseData']['translatedText'] if data.get('responseData') and data['responseData'].get('translatedText') else chunk)
             return "\n\n".join(translated)
-        except Exception as e:
-            print("Translation error:", e)
+        except Exception:
+            pass
         return text
 
     def _apply_translation(self, new_title, new_content):
-        if self.current_rule_id and self.current_rule_id in self.db and isinstance(self.db[self.current_rule_id], dict):
-            self.db[self.current_rule_id]["title"] = new_title
-            self.db[self.current_rule_id]["content"] = new_content
-            self.db[self.current_rule_id]["updated"] = datetime.now().isoformat()
+        if self.current_rule_id and self.current_rule_id in self.db.get("rules", {}) and isinstance(self.db["rules"][self.current_rule_id], dict):
+            self.db["rules"][self.current_rule_id]["title"] = new_title
+            self.db["rules"][self.current_rule_id]["content"] = new_content
+            self.db["rules"][self.current_rule_id]["updated"] = datetime.now().isoformat()
             self.title_var.set(new_title)
             self.text_editor.delete("1.0", tk.END)
             self.text_editor.insert(tk.END, new_content)
@@ -929,16 +869,11 @@ class PrivacyHubApp:
             self.status_bar.config(text=self._t("translate_done"))
 
     def _export_txt(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        rule = self.db[self.current_rule_id]
-        filepath = filedialog.asksaveasfilename(
-            initialdir=EXPORTS_DIR,
-            initialfilename=f"{rule['title']}.txt",
-            defaultextension=".txt",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
-        )
+        rule = self.db["rules"][self.current_rule_id]
+        filepath = filedialog.asksaveasfilename(initialdir=EXPORTS_DIR, initialfilename=f"{rule['title']}.txt", defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if filepath:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(f"{'='*60}\n")
@@ -960,16 +895,11 @@ class PrivacyHubApp:
             messagebox.showinfo("Export", f"Exported to:\n{filepath}")
 
     def _export_md(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        rule = self.db[self.current_rule_id]
-        filepath = filedialog.asksaveasfilename(
-            initialdir=EXPORTS_DIR,
-            initialfilename=f"{rule['title']}.md",
-            defaultextension=".md",
-            filetypes=[("Markdown files", "*.md"), ("All files", "*.*")]
-        )
+        rule = self.db["rules"][self.current_rule_id]
+        filepath = filedialog.asksaveasfilename(initialdir=EXPORTS_DIR, initialfilename=f"{rule['title']}.md", defaultextension=".md", filetypes=[("Markdown files", "*.md"), ("All files", "*.*")])
         if filepath:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(f"# {rule['title']}\n\n")
@@ -988,16 +918,11 @@ class PrivacyHubApp:
             messagebox.showinfo("Export", f"Exported to:\n{filepath}")
 
     def _export_pdf(self):
-        if not self.current_rule_id or self.current_rule_id not in self.db:
+        if not self.current_rule_id or self.current_rule_id not in self.db.get("rules", {}):
             messagebox.showwarning(self._t("app_title"), self._t("select_rule_warn"))
             return
-        rule = self.db[self.current_rule_id]
-        filepath = filedialog.asksaveasfilename(
-            initialdir=EXPORTS_DIR,
-            initialfilename=f"{rule['title']}.pdf",
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
-        )
+        rule = self.db["rules"][self.current_rule_id]
+        filepath = filedialog.asksaveasfilename(initialdir=EXPORTS_DIR, initialfilename=f"{rule['title']}.pdf", defaultextension=".pdf", filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")])
         if not filepath:
             return
         try:
@@ -1022,8 +947,7 @@ class PrivacyHubApp:
             pdf.line(10, pdf.get_y(), 200, pdf.get_y())
             pdf.ln(5)
             pdf.set_font("ArialCustom", "", 12)
-            content = rule.get("content", "")
-            for line in content.split("\n"):
+            for line in rule.get("content", "").split("\n"):
                 pdf.multi_cell(0, 8, line)
             if rule.get("images"):
                 pdf.add_page()
@@ -1044,7 +968,7 @@ class PrivacyHubApp:
                                 pdf.ln(5)
                         except Exception:
                             pdf.set_font("ArialCustom", "", 10)
-                            pdf.cell(0, 6, f"Image insert error: {os.path.basename(img_path)}", ln=True)
+                            pdf.cell(0, 6, f"Image error: {os.path.basename(img_path)}", ln=True)
             pdf.output(filepath)
             self._add_download_record(filepath, "pdf")
             messagebox.showinfo("Export", f"PDF created:\n{filepath}")
@@ -1055,6 +979,8 @@ class PrivacyHubApp:
 def main():
     ensure_dirs()
     db = load_database()
+    migrate_db(db)
+    save_database(db)
     settings = db.get("_settings", {"theme": "dark", "lang": "en"})
     theme_name = THEMES.get(settings.get("theme", "dark"), "darkly")
     root = ttk.Window(themename=theme_name)
